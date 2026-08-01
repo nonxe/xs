@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XS Stream - Dark Video Search & Player</title>
+  <meta name="description" content="Watch and download high-quality videos instantly with XS Stream." />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Background Glow FX -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- Main Layout -->
+  <div class="app-container">
+
+    <!-- Header Navigation -->
+    <header class="header">
+      <div class="header-content">
+        <a href="#" class="brand-logo" id="homeLogo">
+          <div class="logo-icon"><i class="fa-solid fa-play"></i></div>
+          <span class="logo-text">XS<span class="highlight">STREAM</span></span>
+        </a>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+          <form id="searchForm" class="search-form">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input 
+              type="text" 
+              id="searchInput" 
+              class="search-input" 
+              placeholder="Search videos, topics, or keywords..." 
+              autocomplete="off"
+              required 
+            />
+            <button type="button" id="clearSearchBtn" class="clear-btn hidden" title="Clear">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+            <button type="submit" class="search-btn">
+              <span>Search</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- Quick Tags / Suggestions -->
+    <div class="quick-tags-container">
+      <div class="quick-tags-wrapper">
+        <span class="tags-label"><i class="fa-solid fa-fire"></i> Popular:</span>
+        <div class="tags-list" id="tagsList">
+          <button class="tag-btn" data-query="trending">Trending</button>
+          <button class="tag-btn" data-query="hot">Hot</button>
+          <button class="tag-btn" data-query="viral">Viral</button>
+          <button class="tag-btn" data-query="HD">Full HD</button>
+          <button class="tag-btn" data-query="latest">Latest</button>
+          <button class="tag-btn" data-query="short">Short Clips</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Section Info Header -->
+      <div class="section-header">
+        <h2 id="sectionTitle" class="section-title">
+          <i class="fa-solid fa-compass"></i> Discover Videos
+        </h2>
+        <span id="resultCount" class="result-count"></span>
+      </div>
+
+      <!-- Video Grid -->
+      <div id="videoGrid" class="video-grid">
+        <!-- Video cards will be injected here -->
+      </div>
+
+      <!-- Loading State Skeleton -->
+      <div id="loadingSkeleton" class="video-grid hidden">
+        <div class="skeleton-card">
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-sub"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-sub"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-sub"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-sub"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-sub"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-sub"></div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-icon"><i class="fa-solid fa-film"></i></div>
+        <h3>No Videos Found</h3>
+        <p>Try searching for something else or explore the popular keywords above.</p>
+      </div>
+
+      <!-- Error State -->
+      <div id="errorState" class="empty-state hidden">
+        <div class="empty-icon error"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3>Unable to load results</h3>
+        <p id="errorMessage">Something went wrong while connecting to the server.</p>
+        <button id="retryBtn" class="retry-btn"><i class="fa-solid fa-rotate-right"></i> Try Again</button>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p>© 2026 XS Stream. Simple Dark Video Player & Downloader.</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Video Stream & Download Modal -->
+  <div id="videoModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button id="closeModalBtn" class="modal-close-btn" title="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="modal-body">
+        
+        <!-- Video Player Frame / Container -->
+        <div class="player-wrapper">
+          <div id="playerLoading" class="player-loading">
+            <div class="spinner"></div>
+            <span>Fetching video stream...</span>
+          </div>
+
+          <div id="playerError" class="player-error hidden">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <p>Failed to load video stream. The source might be unavailable.</p>
+          </div>
+
+          <video id="mainVideoPlayer" class="video-player hidden" controls controlsList="nodownload" playsinline preload="metadata"></video>
+        </div>
+
+        <!-- Video Info & Controls -->
+        <div class="video-details">
+          <h2 id="modalVideoTitle" class="modal-video-title">Loading title...</h2>
+
+          <div class="modal-meta-row">
+            <span id="modalVideoDuration" class="meta-badge"><i class="fa-regular fa-clock"></i> --</span>
+            <span id="modalVideoQuality" class="meta-badge quality"><i class="fa-solid fa-sliders"></i> --</span>
+          </div>
+
+          <div class="action-buttons">
+            <a id="downloadBtn" href="#" target="_blank" class="action-btn download-btn disabled" download>
+              <i class="fa-solid fa-download"></i>
+              <span>Download Video</span>
+            </a>
+
+            <button id="copyUrlBtn" class="action-btn copy-btn">
+              <i class="fa-regular fa-copy"></i>
+              <span>Copy Link</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
