@@ -1,9 +1,9 @@
 /* ==========================================================================
-   XS STREAM - APPLICATION CORE JS
+   XS STREAM - ULTRA-SMOOTH LOGIC & API ENGINE
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // API Configuration
+  // API Endpoints
   const SEARCH_API_BASE = 'https://apis.davidcyril.name.ng/search/xvideo';
   const DETAIL_API_BASE = 'https://apis.davidcyril.name.ng/xvideo';
 
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('searchInput');
   const clearSearchBtn = document.getElementById('clearSearchBtn');
   const tagsList = document.getElementById('tagsList');
-  const homeLogo = document.getElementById('homeLogo');
+  const brandLogo = document.getElementById('brandLogo');
 
   const videoGrid = document.getElementById('videoGrid');
   const loadingSkeleton = document.getElementById('loadingSkeleton');
@@ -22,9 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const retryBtn = document.getElementById('retryBtn');
 
   const sectionTitle = document.getElementById('sectionTitle');
+  const sectionSubtitle = document.getElementById('sectionSubtitle');
   const resultCount = document.getElementById('resultCount');
 
-  // Modal Elements
+  // Sheet Modal Elements
   const videoModal = document.getElementById('videoModal');
   const closeModalBtn = document.getElementById('closeModalBtn');
   const playerLoading = document.getElementById('playerLoading');
@@ -36,11 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const downloadBtn = document.getElementById('downloadBtn');
   const copyUrlBtn = document.getElementById('copyUrlBtn');
 
-  // Application State
+  // State
   let currentSearchQuery = 'trending';
   let currentStreamUrl = '';
 
-  // Initialize
   init();
 
   function init() {
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setupEventListeners() {
-    // Search Submit
+    // Form Submit
     searchForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const query = searchInput.value.trim();
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Clear Search Input
+    // Input Clear Toggle
     searchInput.addEventListener('input', () => {
       if (searchInput.value.length > 0) {
         clearSearchBtn.classList.remove('hidden');
@@ -74,45 +74,47 @@ document.addEventListener('DOMContentLoaded', () => {
       searchInput.focus();
     });
 
-    // Quick Tag Clicks
+    // Tag Filter Bar
     tagsList.addEventListener('click', (e) => {
-      const tagBtn = e.target.closest('.tag-btn');
-      if (tagBtn) {
-        const query = tagBtn.dataset.query;
+      const pillBtn = e.target.closest('.filter-pill');
+      if (pillBtn) {
+        const query = pillBtn.dataset.query;
         searchInput.value = query;
         clearSearchBtn.classList.remove('hidden');
         currentSearchQuery = query;
 
-        // Highlight active tag
-        document.querySelectorAll('.tag-btn').forEach(btn => btn.classList.remove('active'));
-        tagBtn.classList.add('active');
+        // Active State
+        document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+        pillBtn.classList.add('active');
 
         performSearch(query);
       }
     });
 
-    // Logo Click -> Reset to Trending
-    homeLogo.addEventListener('click', (e) => {
+    // Brand Click -> Reset
+    brandLogo.addEventListener('click', (e) => {
       e.preventDefault();
       searchInput.value = '';
       clearSearchBtn.classList.add('hidden');
       currentSearchQuery = 'trending';
-      document.querySelectorAll('.tag-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+      const firstTag = document.querySelector('.filter-pill[data-query="trending"]');
+      if (firstTag) firstTag.classList.add('active');
       performSearch('trending');
     });
 
-    // Retry Button
+    // Retry Action
     retryBtn.addEventListener('click', () => {
       performSearch(currentSearchQuery);
     });
 
-    // Modal Close
+    // Modal Actions
     closeModalBtn.addEventListener('click', closeModal);
     videoModal.addEventListener('click', (e) => {
       if (e.target === videoModal) closeModal();
     });
 
-    // ESC Key to close modal
+    // Keyboard ESC to exit modal
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
         closeModal();
@@ -123,40 +125,44 @@ document.addEventListener('DOMContentLoaded', () => {
     copyUrlBtn.addEventListener('click', () => {
       if (currentStreamUrl) {
         navigator.clipboard.writeText(currentStreamUrl).then(() => {
-          showToast('Direct video stream URL copied to clipboard!');
+          showToast('Direct stream link copied to clipboard!');
         }).catch(() => {
-          showToast('Failed to copy link.');
+          showToast('Unable to copy link.');
         });
       }
     });
   }
 
   // ==========================================
-  // API SEARCH & FETCH LOGIC
+  // FETCH SEARCH RESULTS
   // ==========================================
 
   async function performSearch(query) {
     showLoading();
-    sectionTitle.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> Results for "${escapeHtml(query)}"`;
+    sectionTitle.textContent = `Results for "${query}"`;
+    sectionSubtitle.textContent = `Showing instant video streams for "${query}"`;
+
+    // Smooth scroll up on mobile/desktop
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const apiUrl = `${SEARCH_API_BASE}?text=${encodeURIComponent(query)}`;
-      const response = await fetch(apiUrl);
-      
+      const url = `${SEARCH_API_BASE}?text=${encodeURIComponent(query)}`;
+      const response = await fetch(url);
+
       if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+        throw new Error(`HTTP Error ${response.status}`);
       }
 
       const data = await response.json();
 
       if (data && data.success && Array.isArray(data.result) && data.result.length > 0) {
-        renderVideos(data.result);
+        renderVideoCards(data.result);
       } else {
         showEmpty();
       }
     } catch (err) {
-      console.error('Search error:', err);
-      showError('Failed to fetch videos from server. Please check your network connection.');
+      console.error('Search failed:', err);
+      showError('Unable to connect to video server. Please check your internet connection.');
     }
   }
 
@@ -165,11 +171,11 @@ document.addEventListener('DOMContentLoaded', () => {
     setModalLoadingState(rawTitle, duration, quality);
 
     try {
-      const apiUrl = `${DETAIL_API_BASE}?url=${encodeURIComponent(videoUrl)}`;
-      const response = await fetch(apiUrl);
+      const url = `${DETAIL_API_BASE}?url=${encodeURIComponent(videoUrl)}`;
+      const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error(`HTTP Error ${response.status}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
@@ -178,45 +184,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = decodeHtmlEntities(data.title || rawTitle);
         setModalSuccessState(data.download_url, title);
       } else {
-        throw new Error('Video stream link not found in API response.');
+        throw new Error('Video source stream could not be extracted.');
       }
     } catch (err) {
-      console.error('Detail fetch error:', err);
-      setModalErrorState('Failed to extract video playback URL.');
+      console.error('Detail fetch failed:', err);
+      setModalErrorState('Failed to load stream link. Stream source may be restricted.');
     }
   }
 
   // ==========================================
-  // RENDER UI
+  // RENDER UI CARDS
   // ==========================================
 
-  function renderVideos(videos) {
+  function renderVideoCards(videos) {
     hideAllStates();
     videoGrid.innerHTML = '';
     resultCount.textContent = `${videos.length} Videos`;
 
     videos.forEach((video) => {
       const card = document.createElement('div');
-      card.className = 'video-card';
+      card.className = 'video-card-item';
 
       const title = decodeHtmlEntities(video.title || 'Untitled Video');
       const cleanQuality = cleanQualityString(video.quality);
       const duration = video.duration || 'N/A';
 
       card.innerHTML = `
-        <div class="card-thumb-container">
-          <img src="${video.thumbnail}" alt="${escapeHtml(title)}" class="card-thumb" loading="lazy" onerror="this.src='https://via.placeholder.com/640x360/14141a/9ca3af?text=No+Thumbnail';" />
-          <div class="card-play-overlay">
-            <div class="play-icon-circle"><i class="fa-solid fa-play"></i></div>
+        <div class="card-media">
+          <img src="${video.thumbnail}" alt="${escapeHtml(title)}" class="card-img" loading="lazy" onerror="this.src='https://via.placeholder.com/640x360/121216/9ca3af?text=No+Preview';" />
+          <div class="card-play-glass">
+            <div class="glass-play-btn"><i class="fa-solid fa-play"></i></div>
           </div>
-          ${duration ? `<span class="card-badge card-duration"><i class="fa-regular fa-clock"></i> ${duration}</span>` : ''}
-          ${cleanQuality ? `<span class="card-badge card-quality">${cleanQuality}</span>` : ''}
+          ${duration ? `<span class="pill-tag pill-duration"><i class="fa-regular fa-clock"></i> ${duration}</span>` : ''}
+          ${cleanQuality ? `<span class="pill-tag pill-quality">${cleanQuality}</span>` : ''}
         </div>
-        <div class="card-body">
-          <h3 class="card-title" title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
-          <div class="card-footer">
+        <div class="card-meta">
+          <h3 class="card-heading" title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
+          <div class="card-footer-info">
             <span>XS Stream</span>
-            <span class="play-link-btn">Watch <i class="fa-solid fa-chevron-right"></i></span>
+            <span class="watch-text">Play <i class="fa-solid fa-chevron-right"></i></span>
           </div>
         </div>
       `;
@@ -232,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // MODAL & PLAYER STATES
+  // MODAL PLAYER MANAGEMENT
   // ==========================================
 
   function openModal() {
@@ -270,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modalVideoTitle.textContent = title;
     mainVideoPlayer.src = streamUrl;
     mainVideoPlayer.play().catch(err => {
-      console.log('Autoplay prevented by browser:', err);
+      console.log('Autoplay prevented:', err);
     });
 
     downloadBtn.setAttribute('href', streamUrl);
@@ -286,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // STATE MANAGEMENT HELPER FUNCTIONS
+  // HELPERS & UTILS
   // ==========================================
 
   function showLoading() {
@@ -315,10 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
     errorState.classList.add('hidden');
   }
 
-  // ==========================================
-  // UTILS
-  // ==========================================
-
   function escapeHtml(str) {
     return str.replace(/[&<>"']/g, function(m) {
       return {
@@ -340,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function cleanQualityString(q) {
     if (!q) return 'HD';
-    // e.g. 720p720p -> 720p
     const match = q.match(/(\d+p)/i);
     return match ? match[1] : q;
   }
@@ -357,14 +358,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function showToast(msg) {
     const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
-    toast.className = 'toast';
+    toast.className = 'toast-pill';
     toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${escapeHtml(msg)}</span>`;
     container.appendChild(toast);
 
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s ease';
+      toast.style.transform = 'translateY(10px)';
+      toast.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
       setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 2800);
   }
 });
