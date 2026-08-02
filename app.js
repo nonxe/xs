@@ -1,5 +1,5 @@
 /* ==========================================================================
-   XS STREAM - CUSTOM SMOOTH VIDEO PLAYER & DIRECT URL DOWNLOAD ENGINE
+   XS STREAM - CUSTOM SMOOTH VIDEO PLAYER & DIRECT INSTANT DOWNLOAD ENGINE
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -174,13 +174,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // DIRECT URL DOWNLOAD HANDLER (INSTANT BROWSER HANDOVER)
+  // INSTANT DIRECT FILE DOWNLOAD (STARTS DOWNLOAD IMMEDIATELY)
   // ==========================================
 
   function setupDownloadEvents() {
     downloadBtn.addEventListener('click', () => {
       if (!currentStreamUrl) return;
-      showToast('Starting video download in browser...');
+
+      const titleText = watchVideoTitle.textContent || 'video';
+      const filename = `${slugify(titleText)}.mp4`;
+
+      showToast('Starting file download to device...');
+      downloadBtnLabel.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Downloading...`;
+
+      // Instant download trigger
+      fetch(currentStreamUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Fetch failed');
+          return res.blob();
+        })
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+          showToast('Download complete!');
+          downloadBtnLabel.textContent = 'Download Video';
+        })
+        .catch(() => {
+          // Instant direct anchor click fallback (no raw tab opening)
+          const link = document.createElement('a');
+          link.href = currentStreamUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          downloadBtnLabel.textContent = 'Download Video';
+        });
     });
   }
 
@@ -478,7 +512,6 @@ document.addEventListener('DOMContentLoaded', () => {
     watchVideoQuality.innerHTML = `<i class="fa-solid fa-sliders"></i> ${cleanQuality}`;
 
     downloadBtn.classList.add('disabled');
-    downloadBtn.removeAttribute('href');
     downloadBtnLabel.textContent = 'Download Video';
     currentStreamUrl = '';
 
@@ -505,9 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
         mainVideoPlayer.src = data.download_url;
         mainVideoPlayer.play().catch(err => console.log('Autoplay policy info:', err));
 
-        // Direct Browser Handover Download Link setup
-        downloadBtn.setAttribute('href', data.download_url);
-        downloadBtn.setAttribute('download', `${slugify(title)}.mp4`);
         downloadBtn.classList.remove('disabled');
       } else {
         throw new Error('No stream URL in response');
