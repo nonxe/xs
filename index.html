@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>XS Stream - Premium Dark Video Experience</title>
-  <meta name="description" content="Watch and download high-quality videos with a sleek, ultra-smooth dark experience." />
+  <title>XS Stream - YouTube Style Dark Video Platform</title>
+  <meta name="description" content="Watch, stream, and download videos with smart recommendations in a YouTube-inspired dark interface." />
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,24 +18,24 @@
 </head>
 <body>
 
-  <!-- Background Ambient Glow -->
+  <!-- Ambient Glow Background -->
   <div class="ambient-glow glow-top"></div>
   <div class="ambient-glow glow-bottom"></div>
 
   <!-- App Wrapper -->
   <div class="app-wrapper">
 
-    <!-- Sticky Glass Header -->
+    <!-- YouTube Style Sticky Header -->
     <header class="app-header">
       <div class="header-inner">
         
-        <!-- Brand -->
-        <a href="#" class="brand" id="brandLogo">
+        <!-- Brand Logo -->
+        <a href="#" class="brand" id="brandLogo" title="XS Stream Home">
           <div class="brand-badge"><i class="fa-solid fa-play"></i></div>
           <span class="brand-name">XS<span class="brand-accent">STREAM</span></span>
         </a>
 
-        <!-- Pill Search Bar -->
+        <!-- YouTube Style Center Search Bar -->
         <div class="search-wrapper">
           <form id="searchForm" class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -43,7 +43,7 @@
               type="text" 
               id="searchInput" 
               class="search-input" 
-              placeholder="Search videos, trending, creators..." 
+              placeholder="Search videos, creators, topics..." 
               autocomplete="off"
               spellcheck="false"
               required 
@@ -51,7 +51,8 @@
             <button type="button" id="clearSearchBtn" class="clear-icon hidden" title="Clear">
               <i class="fa-solid fa-xmark"></i>
             </button>
-            <button type="submit" class="search-action-btn">
+            <button type="submit" class="search-action-btn" title="Search">
+              <i class="fa-solid fa-magnifying-glass"></i>
               <span>Search</span>
             </button>
           </form>
@@ -60,8 +61,8 @@
       </div>
     </header>
 
-    <!-- Segmented Filter Tags -->
-    <nav class="filter-section">
+    <!-- Category Chips Filter -->
+    <nav class="filter-section" id="filterNav">
       <div class="filter-scroll" id="tagsList">
         <button class="filter-pill active" data-query="trending">
           <i class="fa-solid fa-fire-flame-curved"></i> Trending
@@ -87,145 +88,199 @@
     <!-- Main Container -->
     <main class="main-container">
       
-      <!-- Section Title & Status -->
-      <div class="section-bar">
-        <div class="section-heading">
-          <h1 id="sectionTitle" class="title-text">Discover</h1>
-          <p id="sectionSubtitle" class="subtitle-text">Curated videos for instant streaming & high-speed downloads</p>
-        </div>
-        <div id="resultCount" class="counter-badge">-- Videos</div>
-      </div>
+      <!-- ==========================================
+           1. WATCH PAGE VIEW (YouTube Style Player + Recommendations)
+           ========================================== -->
+      <section id="watchView" class="watch-view hidden">
+        
+        <div class="watch-layout">
+          
+          <!-- Primary Column: Player & Info -->
+          <div class="primary-column">
+            
+            <!-- Video Player Box -->
+            <div class="player-wrapper">
+              <div id="playerLoading" class="player-overlay-state">
+                <div class="fluid-spinner"></div>
+                <span>Loading video stream...</span>
+              </div>
 
-      <!-- Video Card Grid -->
-      <div id="videoGrid" class="cards-grid">
-        <!-- Dynamic Cards -->
-      </div>
+              <div id="playerError" class="player-overlay-state hidden">
+                <i class="fa-solid fa-circle-exclamation error-icon"></i>
+                <p>Stream unavailable or source link restricted.</p>
+                <button id="retryPlayerBtn" class="pill-btn primary margin-top"><i class="fa-solid fa-rotate-right"></i> Retry Stream</button>
+              </div>
 
-      <!-- Fluid Skeleton Loader -->
-      <div id="loadingSkeleton" class="cards-grid hidden">
-        <div class="skeleton-item">
-          <div class="sk-media"></div>
-          <div class="sk-content">
-            <div class="sk-line sk-line-1"></div>
-            <div class="sk-line sk-line-2"></div>
-          </div>
-        </div>
-        <div class="skeleton-item">
-          <div class="sk-media"></div>
-          <div class="sk-content">
-            <div class="sk-line sk-line-1"></div>
-            <div class="sk-line sk-line-2"></div>
-          </div>
-        </div>
-        <div class="skeleton-item">
-          <div class="sk-media"></div>
-          <div class="sk-content">
-            <div class="sk-line sk-line-1"></div>
-            <div class="sk-line sk-line-2"></div>
-          </div>
-        </div>
-        <div class="skeleton-item">
-          <div class="sk-media"></div>
-          <div class="sk-content">
-            <div class="sk-line sk-line-1"></div>
-            <div class="sk-line sk-line-2"></div>
-          </div>
-        </div>
-        <div class="skeleton-item">
-          <div class="sk-media"></div>
-          <div class="sk-content">
-            <div class="sk-line sk-line-1"></div>
-            <div class="sk-line sk-line-2"></div>
-          </div>
-        </div>
-        <div class="skeleton-item">
-          <div class="sk-media"></div>
-          <div class="sk-content">
-            <div class="sk-line sk-line-1"></div>
-            <div class="sk-line sk-line-2"></div>
-          </div>
-        </div>
-      </div>
+              <video id="mainVideoPlayer" class="youtube-player hidden" controls controlsList="nodownload" playsinline preload="metadata" autoplay></video>
+            </div>
 
-      <!-- Empty State -->
-      <div id="emptyState" class="empty-view hidden">
-        <div class="empty-glass-icon"><i class="fa-solid fa-photo-film"></i></div>
-        <h2>No Videos Found</h2>
-        <p>We couldn't find matches for your search. Try different keywords or select a popular tag.</p>
-      </div>
+            <!-- Video Metadata & Action Bar -->
+            <div class="video-info-box">
+              <h1 id="watchVideoTitle" class="watch-title">Video Title</h1>
+              
+              <div class="watch-meta-bar">
+                <div class="watch-badges">
+                  <span id="watchVideoDuration" class="meta-pill"><i class="fa-regular fa-clock"></i> --</span>
+                  <span id="watchVideoQuality" class="meta-pill quality-pill"><i class="fa-solid fa-sliders"></i> --</span>
+                </div>
 
-      <!-- Error State -->
-      <div id="errorState" class="empty-view hidden">
-        <div class="empty-glass-icon error-icon"><i class="fa-solid fa-wifi"></i></div>
-        <h2>Connection Error</h2>
-        <p id="errorMessage">Unable to fetch stream data at this moment.</p>
-        <button id="retryBtn" class="pill-btn primary"><i class="fa-solid fa-arrow-rotate-right"></i> Try Again</button>
-      </div>
+                <div class="watch-actions">
+                  <a id="downloadBtn" href="#" target="_blank" class="yt-action-btn primary-btn disabled" download>
+                    <i class="fa-solid fa-arrow-down-to-line"></i>
+                    <span>Download</span>
+                  </a>
+
+                  <button id="copyUrlBtn" class="yt-action-btn secondary-btn">
+                    <i class="fa-regular fa-copy"></i>
+                    <span>Copy Link</span>
+                  </button>
+
+                  <button id="backToBrowseBtn" class="yt-action-btn secondary-btn">
+                    <i class="fa-solid fa-grid-2"></i>
+                    <span>Back to Search</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Secondary Column: Related Videos / Up Next -->
+          <div class="secondary-column">
+            
+            <div class="recommendations-header">
+              <h3><i class="fa-solid fa-layer-group highlight-icon"></i> Related Videos</h3>
+              <span class="up-next-label">Up Next</span>
+            </div>
+
+            <!-- Related Skeleton Loader -->
+            <div id="relatedSkeleton" class="related-list hidden">
+              <div class="related-sk-card">
+                <div class="sk-media"></div>
+                <div class="sk-info">
+                  <div class="sk-line sk-line-1"></div>
+                  <div class="sk-line sk-line-2"></div>
+                </div>
+              </div>
+              <div class="related-sk-card">
+                <div class="sk-media"></div>
+                <div class="sk-info">
+                  <div class="sk-line sk-line-1"></div>
+                  <div class="sk-line sk-line-2"></div>
+                </div>
+              </div>
+              <div class="related-sk-card">
+                <div class="sk-media"></div>
+                <div class="sk-info">
+                  <div class="sk-line sk-line-1"></div>
+                  <div class="sk-line sk-line-2"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Related Videos Grid/List -->
+            <div id="relatedList" class="related-list">
+              <!-- Dynamically populated suggested videos -->
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ==========================================
+           2. HOME / BROWSE GRID VIEW
+           ========================================== -->
+      <section id="browseView" class="browse-view">
+        
+        <!-- Section Bar -->
+        <div class="section-bar">
+          <div class="section-heading">
+            <h2 id="sectionTitle" class="title-text">Discover Videos</h2>
+            <p id="sectionSubtitle" class="subtitle-text">Popular streams and high quality downloads</p>
+          </div>
+          <div id="resultCount" class="counter-badge">-- Videos</div>
+        </div>
+
+        <!-- Video Grid -->
+        <div id="videoGrid" class="cards-grid">
+          <!-- Dynamic Video Cards -->
+        </div>
+
+        <!-- Grid Skeleton Loader -->
+        <div id="loadingSkeleton" class="cards-grid hidden">
+          <div class="skeleton-item">
+            <div class="sk-media"></div>
+            <div class="sk-content">
+              <div class="sk-line sk-line-1"></div>
+              <div class="sk-line sk-line-2"></div>
+            </div>
+          </div>
+          <div class="skeleton-item">
+            <div class="sk-media"></div>
+            <div class="sk-content">
+              <div class="sk-line sk-line-1"></div>
+              <div class="sk-line sk-line-2"></div>
+            </div>
+          </div>
+          <div class="skeleton-item">
+            <div class="sk-media"></div>
+            <div class="sk-content">
+              <div class="sk-line sk-line-1"></div>
+              <div class="sk-line sk-line-2"></div>
+            </div>
+          </div>
+          <div class="skeleton-item">
+            <div class="sk-media"></div>
+            <div class="sk-content">
+              <div class="sk-line sk-line-1"></div>
+              <div class="sk-line sk-line-2"></div>
+            </div>
+          </div>
+          <div class="skeleton-item">
+            <div class="sk-media"></div>
+            <div class="sk-content">
+              <div class="sk-line sk-line-1"></div>
+              <div class="sk-line sk-line-2"></div>
+            </div>
+          </div>
+          <div class="skeleton-item">
+            <div class="sk-media"></div>
+            <div class="sk-content">
+              <div class="sk-line sk-line-1"></div>
+              <div class="sk-line sk-line-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty View -->
+        <div id="emptyState" class="empty-view hidden">
+          <div class="empty-glass-icon"><i class="fa-solid fa-film"></i></div>
+          <h2>No Videos Found</h2>
+          <p>Try searching for different keywords or pick a trending tag above.</p>
+        </div>
+
+        <!-- Error View -->
+        <div id="errorState" class="empty-view hidden">
+          <div class="empty-glass-icon error-icon"><i class="fa-solid fa-wifi"></i></div>
+          <h2>Connection Error</h2>
+          <p id="errorMessage">Unable to fetch videos at this moment.</p>
+          <button id="retryBtn" class="pill-btn primary"><i class="fa-solid fa-arrow-rotate-right"></i> Try Again</button>
+        </div>
+
+      </section>
 
     </main>
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p>© 2026 XS Stream • Built for ultimate dark performance</p>
+      <p>© 2026 XS Stream • YouTube Style Dark Video Platform</p>
     </footer>
 
   </div>
 
-  <!-- Sheet Modal Video Player -->
-  <div id="videoModal" class="sheet-modal-backdrop hidden">
-    <div class="sheet-modal-card">
-      
-      <!-- Top Grab Bar Indicator -->
-      <div class="sheet-grab-bar"></div>
-
-      <button id="closeModalBtn" class="sheet-close-btn" title="Close">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <div class="sheet-modal-content">
-        
-        <!-- Player Container -->
-        <div class="media-container">
-          <div id="playerLoading" class="player-spinner-view">
-            <div class="fluid-spinner"></div>
-            <span>Preparing stream...</span>
-          </div>
-
-          <div id="playerError" class="player-error-view hidden">
-            <i class="fa-solid fa-circle-exclamation"></i>
-            <p>Stream source is temporarily unavailable.</p>
-          </div>
-
-          <video id="mainVideoPlayer" class="fluid-player hidden" controls controlsList="nodownload" playsinline preload="metadata"></video>
-        </div>
-
-        <!-- Video Info & Action Sheet -->
-        <div class="media-info-sheet">
-          <h2 id="modalVideoTitle" class="media-title">Loading video...</h2>
-
-          <div class="media-tags">
-            <span id="modalVideoDuration" class="info-pill"><i class="fa-regular fa-clock"></i> --</span>
-            <span id="modalVideoQuality" class="info-pill quality-pill"><i class="fa-solid fa-sliders"></i> --</span>
-          </div>
-
-          <div class="media-actions">
-            <a id="downloadBtn" href="#" target="_blank" class="sheet-action-btn primary-action disabled" download>
-              <i class="fa-solid fa-arrow-down-to-line"></i>
-              <span>Download Video</span>
-            </a>
-
-            <button id="copyUrlBtn" class="sheet-action-btn secondary-action">
-              <i class="fa-regular fa-copy"></i>
-              <span>Copy Link</span>
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- Floating Toast Container -->
+  <!-- Floating Toast Notifications -->
   <div id="toastContainer" class="toast-stack"></div>
 
   <script src="app.js"></script>
