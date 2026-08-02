@@ -1,11 +1,15 @@
 /* ==========================================================================
-   XS STREAM - CUSTOM SMOOTH VIDEO PLAYER & DIRECT INSTANT DOWNLOAD ENGINE
+   XS STREAM - CUSTOM SMOOTH VIDEO PLAYER & REWRITTEN ENDPOINT ENGINE
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
   // API Endpoints
   const SEARCH_API_BASE = 'https://apis.davidcyril.name.ng/search/xvideo';
   const DETAIL_API_BASE = 'https://apis.davidcyril.name.ng/xvideo';
+
+  // Domain Rewriting Configuration
+  const OLD_DOMAIN_PREFIX = 'https://mp4-cdn77.xvideos-cdn.com/';
+  const NEW_DOMAIN_PREFIX = 'https://exendpoint.vercel.app/';
 
   // DOM Elements - Navigation & Views
   const searchForm = document.getElementById('searchForm');
@@ -148,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentActiveVideo) openWatchView(currentActiveVideo);
     });
 
-    // Copy Link
+    // Copy Link (Uses Rewritten Vercel Endpoint Domain)
     copyUrlBtn.addEventListener('click', () => {
       if (currentStreamUrl) {
         navigator.clipboard.writeText(currentStreamUrl).then(() => {
@@ -174,7 +178,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // INSTANT DIRECT FILE DOWNLOAD (STARTS DOWNLOAD IMMEDIATELY)
+  // DOMAIN REWRITING HELPER
+  // ==========================================
+
+  function transformStreamUrl(rawUrl) {
+    if (!rawUrl) return '';
+    // Replace mp4-cdn77.xvideos-cdn.com domain with exendpoint.vercel.app
+    return rawUrl.replace(/^https?:\/\/mp4-cdn77\.xvideos-cdn\.com\//i, NEW_DOMAIN_PREFIX);
+  }
+
+  // ==========================================
+  // DOWNLOAD ACTION (USES REWRITTEN ENDPOINT)
   // ==========================================
 
   function setupDownloadEvents() {
@@ -187,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Starting file download to device...');
       downloadBtnLabel.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Downloading...`;
 
-      // Instant download trigger
+      // Trigger instant direct download via blob or link anchor
       fetch(currentStreamUrl)
         .then(res => {
           if (!res.ok) throw new Error('Fetch failed');
@@ -206,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
           downloadBtnLabel.textContent = 'Download Video';
         })
         .catch(() => {
-          // Instant direct anchor click fallback (no raw tab opening)
+          // Instant direct anchor click fallback
           const link = document.createElement('a');
           link.href = currentStreamUrl;
           link.download = filename;
@@ -530,12 +544,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
 
       if (data && data.success && data.download_url) {
-        currentStreamUrl = data.download_url;
+        // Rewrite mp4-cdn77.xvideos-cdn.com domain to exendpoint.vercel.app
+        currentStreamUrl = transformStreamUrl(data.download_url);
+
         playerLoading.classList.add('hidden');
         mainVideoPlayer.classList.remove('hidden');
         customControls.classList.remove('hidden');
 
-        mainVideoPlayer.src = data.download_url;
+        mainVideoPlayer.src = currentStreamUrl;
         mainVideoPlayer.play().catch(err => console.log('Autoplay policy info:', err));
 
         downloadBtn.classList.remove('disabled');
