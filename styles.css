@@ -1,5 +1,5 @@
 /* ==========================================================================
-   XS STREAM - YOUTUBE-STYLE OLED DARK THEME & LAYOUT
+   XS STREAM - OLED DARK THEME & CUSTOM VIDEO PLAYER
    ========================================================================== */
 
 :root {
@@ -55,7 +55,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Background Ambient Halos */
+/* Background Ambient Glow */
 .ambient-glow {
   position: fixed;
   width: 600px;
@@ -97,7 +97,7 @@ html, body {
   display: none !important;
 }
 
-/* YouTube Style Header */
+/* Header */
 .app-header {
   position: sticky;
   top: 0;
@@ -150,7 +150,7 @@ html, body {
   margin-left: 2px;
 }
 
-/* Center Search Bar */
+/* Search Bar */
 .search-wrapper {
   flex: 1;
   max-width: 600px;
@@ -239,7 +239,7 @@ html, body {
   transform: scale(0.95);
 }
 
-/* Category Filter Nav */
+/* Filter Section */
 .filter-section {
   padding: 16px 0 8px;
 }
@@ -301,9 +301,7 @@ html, body {
   padding: 20px 0 40px;
 }
 
-/* ==========================================
-   YOUTUBE WATCH PAGE LAYOUT
-   ========================================== */
+/* Watch View */
 .watch-view {
   animation: fadeIn 0.4s var(--ease-out);
 }
@@ -315,13 +313,15 @@ html, body {
   align-items: start;
 }
 
-/* Primary Video Column */
 .primary-column {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* ==========================================
+   CUSTOM SMOOTH VIDEO PLAYER
+   ========================================== */
 .player-wrapper {
   position: relative;
   width: 100%;
@@ -330,14 +330,16 @@ html, body {
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--color-border-bright);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 43, 94, 0.15);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(255, 43, 94, 0.15);
+  user-select: none;
 }
 
-.youtube-player {
+.video-element {
   width: 100%;
   height: 100%;
   outline: none;
   object-fit: contain;
+  cursor: pointer;
 }
 
 .player-overlay-state {
@@ -351,7 +353,7 @@ html, body {
   background: rgba(10, 10, 12, 0.95);
   color: var(--color-text-sub);
   font-size: 0.95rem;
-  z-index: 10;
+  z-index: 20;
   text-align: center;
   padding: 20px;
 }
@@ -372,6 +374,231 @@ html, body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Big Play Overlay */
+.big-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+  cursor: pointer;
+  transition: opacity 0.3s var(--ease-out);
+}
+
+.big-play-overlay i {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  box-shadow: var(--shadow-accent-glow);
+  transform: scale(0.9);
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.big-play-overlay:hover i {
+  transform: scale(1.05);
+}
+
+/* Custom Controls Bar */
+.custom-controls-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+  padding: 16px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 15;
+  transition: opacity 0.3s var(--ease-out);
+}
+
+.custom-controls-bar.autohide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Progress Scrubber */
+.progress-area {
+  position: relative;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.progress-bar-bg {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 99px;
+  transition: height 0.2s ease;
+}
+
+.progress-area:hover .progress-bar-bg {
+  height: 6px;
+}
+
+.progress-buffer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 99px;
+}
+
+.progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: var(--gradient-accent);
+  border-radius: 99px;
+}
+
+.progress-handle {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 10px var(--color-accent);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.2s ease;
+}
+
+.progress-area:hover .progress-handle {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Controls Row */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.controls-left, .controls-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ctrl-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-main);
+  font-size: 1.1rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--color-accent);
+}
+
+.ctrl-btn:active {
+  transform: scale(0.9);
+}
+
+/* Volume Group */
+.volume-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.volume-range {
+  width: 70px;
+  height: 4px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.time-readout {
+  font-size: 0.82rem;
+  color: var(--color-text-sub);
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+/* Speed Menu */
+.speed-menu-container {
+  position: relative;
+}
+
+.speed-trigger {
+  width: auto;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.speed-menu {
+  position: absolute;
+  bottom: 42px;
+  right: 0;
+  background: rgba(18, 18, 24, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border-bright);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  z-index: 30;
+  min-width: 110px;
+}
+
+.speed-option {
+  background: transparent;
+  border: none;
+  color: var(--color-text-sub);
+  padding: 8px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition-fast);
+}
+
+.speed-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-main);
+}
+
+.speed-option.active {
+  color: var(--color-accent);
+  font-weight: 700;
+  background: rgba(255, 43, 94, 0.15);
 }
 
 /* Video Info Box */
@@ -427,7 +654,7 @@ html, body {
   flex-wrap: wrap;
 }
 
-.yt-action-btn {
+.action-btn {
   padding: 10px 18px;
   border-radius: var(--radius-pill);
   font-weight: 600;
@@ -469,11 +696,11 @@ html, body {
   border-color: var(--color-border-bright);
 }
 
-.yt-action-btn:active {
+.action-btn:active {
   transform: scale(0.95);
 }
 
-/* Secondary Column: Recommendations / Related */
+/* Recommendations Column */
 .secondary-column {
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-subtle);
@@ -521,7 +748,7 @@ html, body {
   gap: 14px;
 }
 
-/* Related Video Card */
+/* Related Card */
 .related-card {
   display: flex;
   gap: 12px;
@@ -595,7 +822,6 @@ html, body {
   color: var(--color-text-sub);
 }
 
-/* Related Skeleton Loader */
 .related-sk-card {
   display: flex;
   gap: 12px;
@@ -615,9 +841,7 @@ html, body {
   justify-content: center;
 }
 
-/* ==========================================
-   BROWSE / SEARCH GRID VIEW
-   ========================================== */
+/* Browse Grid View */
 .browse-view {
   animation: fadeIn 0.4s var(--ease-out);
 }
@@ -652,7 +876,6 @@ html, body {
   font-weight: 600;
 }
 
-/* Video Grid */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -797,7 +1020,7 @@ html, body {
   gap: 4px;
 }
 
-/* Skeleton Loaders */
+/* Skeleton */
 .skeleton-item {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-subtle);
@@ -840,7 +1063,7 @@ html, body {
   100% { background-position: -200% 0; }
 }
 
-/* Empty & Error View */
+/* Empty View */
 .empty-view {
   text-align: center;
   padding: 80px 24px;
@@ -907,7 +1130,7 @@ html, body {
   margin-top: 10px;
 }
 
-/* Toast Notifications */
+/* Toast */
 .toast-stack {
   position: fixed;
   bottom: 30px;
@@ -958,7 +1181,7 @@ html, body {
   font-size: 0.85rem;
 }
 
-/* Responsive Media Queries */
+/* Responsive */
 @media (max-width: 1024px) {
   .watch-layout {
     grid-template-columns: 1fr;

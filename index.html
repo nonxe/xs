@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>XS Stream - YouTube Style Dark Video Platform</title>
-  <meta name="description" content="Watch, stream, and download videos with smart recommendations in a YouTube-inspired dark interface." />
+  <title>XS Stream - Premium Dark Video Experience</title>
+  <meta name="description" content="Watch, stream, and download videos with custom smooth playback and smart recommendations." />
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,7 +25,7 @@
   <!-- App Wrapper -->
   <div class="app-wrapper">
 
-    <!-- YouTube Style Sticky Header -->
+    <!-- Sticky Header -->
     <header class="app-header">
       <div class="header-inner">
         
@@ -35,7 +35,7 @@
           <span class="brand-name">XS<span class="brand-accent">STREAM</span></span>
         </a>
 
-        <!-- YouTube Style Center Search Bar -->
+        <!-- Center Search Bar -->
         <div class="search-wrapper">
           <form id="searchForm" class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -89,7 +89,7 @@
     <main class="main-container">
       
       <!-- ==========================================
-           1. WATCH PAGE VIEW (YouTube Style Player + Recommendations)
+           1. WATCH PAGE VIEW (Custom Video Player + Recommendations)
            ========================================== -->
       <section id="watchView" class="watch-view hidden">
         
@@ -98,11 +98,13 @@
           <!-- Primary Column: Player & Info -->
           <div class="primary-column">
             
-            <!-- Video Player Box -->
-            <div class="player-wrapper">
+            <!-- Custom Video Player Box -->
+            <div class="player-wrapper" id="playerContainer">
+              
+              <!-- Loading & Error Overlays -->
               <div id="playerLoading" class="player-overlay-state">
                 <div class="fluid-spinner"></div>
-                <span>Loading video stream...</span>
+                <span>Preparing stream playback...</span>
               </div>
 
               <div id="playerError" class="player-overlay-state hidden">
@@ -111,7 +113,72 @@
                 <button id="retryPlayerBtn" class="pill-btn primary margin-top"><i class="fa-solid fa-rotate-right"></i> Retry Stream</button>
               </div>
 
-              <video id="mainVideoPlayer" class="youtube-player hidden" controls controlsList="nodownload" playsinline preload="metadata" autoplay></video>
+              <!-- Big Center Play Button Overlay -->
+              <div id="bigPlayBtn" class="big-play-overlay hidden">
+                <i class="fa-solid fa-play"></i>
+              </div>
+
+              <!-- HTML5 Video Element (Custom Controls) -->
+              <video id="mainVideoPlayer" class="video-element hidden" playsinline preload="metadata" autoplay></video>
+
+              <!-- Custom Player Controls Bar -->
+              <div id="customControls" class="custom-controls-bar hidden">
+                
+                <!-- Progress Scrubber -->
+                <div class="progress-area" id="progressArea">
+                  <div class="progress-bar-bg">
+                    <div class="progress-buffer" id="progressBuffer"></div>
+                    <div class="progress-fill" id="progressFill"></div>
+                    <div class="progress-handle" id="progressHandle"></div>
+                  </div>
+                </div>
+
+                <div class="controls-row">
+                  
+                  <!-- Left: Play/Pause, Volume, Time -->
+                  <div class="controls-left">
+                    <button id="playPauseBtn" class="ctrl-btn" title="Play/Pause (Space)">
+                      <i class="fa-solid fa-play"></i>
+                    </button>
+
+                    <div class="volume-group">
+                      <button id="muteBtn" class="ctrl-btn" title="Mute/Unmute">
+                        <i class="fa-solid fa-volume-high"></i>
+                      </button>
+                      <input type="range" id="volumeSlider" class="volume-range" min="0" max="1" step="0.05" value="1" />
+                    </div>
+
+                    <div class="time-readout">
+                      <span id="currentTime">0:00</span> / <span id="totalDuration">0:00</span>
+                    </div>
+                  </div>
+
+                  <!-- Right: Speed, Fullscreen -->
+                  <div class="controls-right">
+                    
+                    <!-- Speed Menu -->
+                    <div class="speed-menu-container">
+                      <button id="speedBtn" class="ctrl-btn speed-trigger" title="Playback Speed">
+                        <span id="speedText">1x</span>
+                      </button>
+                      <div id="speedMenu" class="speed-menu hidden">
+                        <button class="speed-option" data-speed="0.5">0.5x</button>
+                        <button class="speed-option" data-speed="0.75">0.75x</button>
+                        <button class="speed-option active" data-speed="1">1x (Normal)</button>
+                        <button class="speed-option" data-speed="1.25">1.25x</button>
+                        <button class="speed-option" data-speed="1.5">1.5x</button>
+                        <button class="speed-option" data-speed="2">2x</button>
+                      </div>
+                    </div>
+
+                    <button id="fullscreenBtn" class="ctrl-btn" title="Fullscreen">
+                      <i class="fa-solid fa-expand"></i>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
             </div>
 
             <!-- Video Metadata & Action Bar -->
@@ -125,17 +192,17 @@
                 </div>
 
                 <div class="watch-actions">
-                  <a id="downloadBtn" href="#" target="_blank" class="yt-action-btn primary-btn disabled" download>
+                  <a id="downloadBtn" href="#" target="_blank" class="action-btn primary-btn disabled" download>
                     <i class="fa-solid fa-arrow-down-to-line"></i>
-                    <span>Download</span>
+                    <span>Download Video</span>
                   </a>
 
-                  <button id="copyUrlBtn" class="yt-action-btn secondary-btn">
+                  <button id="copyUrlBtn" class="action-btn secondary-btn">
                     <i class="fa-regular fa-copy"></i>
                     <span>Copy Link</span>
                   </button>
 
-                  <button id="backToBrowseBtn" class="yt-action-btn secondary-btn">
+                  <button id="backToBrowseBtn" class="action-btn secondary-btn">
                     <i class="fa-solid fa-grid-2"></i>
                     <span>Back to Search</span>
                   </button>
@@ -149,7 +216,7 @@
           <div class="secondary-column">
             
             <div class="recommendations-header">
-              <h3><i class="fa-solid fa-layer-group highlight-icon"></i> Related Videos</h3>
+              <h3><i class="fa-solid fa-layer-group highlight-icon"></i> Suggested Videos</h3>
               <span class="up-next-label">Up Next</span>
             </div>
 
@@ -275,7 +342,7 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p>© 2026 XS Stream • YouTube Style Dark Video Platform</p>
+      <p>© 2026 XS Stream • Ultimate Dark Streaming Platform</p>
     </footer>
 
   </div>
