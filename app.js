@@ -1,5 +1,5 @@
 /* ==========================================================================
-   XS STREAM - CUSTOM SMOOTH VIDEO PLAYER & DIRECT DOWNLOAD ENGINE
+   XS STREAM - CUSTOM SMOOTH VIDEO PLAYER & DIRECT URL DOWNLOAD ENGINE
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentStreamUrl = '';
   let controlsHideTimeout = null;
   let isScrubbing = false;
-  let isDownloading = false;
 
   init();
 
@@ -175,93 +174,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // DIRECT FILE DOWNLOAD ENGINE
+  // DIRECT URL DOWNLOAD HANDLER (INSTANT BROWSER HANDOVER)
   // ==========================================
 
   function setupDownloadEvents() {
-    downloadBtn.addEventListener('click', async () => {
-      if (!currentStreamUrl || isDownloading) return;
-
-      const videoTitle = watchVideoTitle.textContent || 'video';
-      const filename = `${slugify(videoTitle)}.mp4`;
-
-      isDownloading = true;
-      downloadBtn.classList.add('disabled');
-      downloadBtnLabel.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading...`;
-      showToast('Starting file download to your device...');
-
-      try {
-        // Attempt Blob Download via XMLHttpRequest for progress monitoring
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', currentStreamUrl, true);
-        xhr.responseType = 'blob';
-
-        xhr.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            downloadBtnLabel.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${percent}%`;
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status === 200) {
-            const blob = xhr.response;
-            const blobUrl = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = blobUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-
-            setTimeout(() => {
-              document.body.removeChild(a);
-              URL.revokeObjectURL(blobUrl);
-            }, 100);
-
-            resetDownloadButton('Download Complete!');
-            showToast('Video saved successfully to your device!');
-          } else {
-            throw new Error(`HTTP ${xhr.status}`);
-          }
-        };
-
-        xhr.onerror = () => {
-          // If CORS prevents blob download, trigger direct anchor download fallback
-          fallbackDirectDownload(currentStreamUrl, filename);
-        };
-
-        xhr.send();
-
-      } catch (err) {
-        console.error('Download error:', err);
-        fallbackDirectDownload(currentStreamUrl, filename);
-      }
+    downloadBtn.addEventListener('click', () => {
+      if (!currentStreamUrl) return;
+      showToast('Starting video download in browser...');
     });
-  }
-
-  function fallbackDirectDownload(url, filename) {
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.target = '_blank';
-    a.setAttribute('download', filename);
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => document.body.removeChild(a), 100);
-
-    resetDownloadButton('Download Started');
-    showToast('Download started in browser!');
-  }
-
-  function resetDownloadButton(msg) {
-    isDownloading = false;
-    downloadBtn.classList.remove('disabled');
-    downloadBtnLabel.innerHTML = `<i class="fa-solid fa-check"></i> ${msg}`;
-    setTimeout(() => {
-      downloadBtnLabel.innerHTML = `Download Video`;
-    }, 4000);
   }
 
   // ==========================================
@@ -558,6 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     watchVideoQuality.innerHTML = `<i class="fa-solid fa-sliders"></i> ${cleanQuality}`;
 
     downloadBtn.classList.add('disabled');
+    downloadBtn.removeAttribute('href');
     downloadBtnLabel.textContent = 'Download Video';
     currentStreamUrl = '';
 
@@ -584,6 +505,9 @@ document.addEventListener('DOMContentLoaded', () => {
         mainVideoPlayer.src = data.download_url;
         mainVideoPlayer.play().catch(err => console.log('Autoplay policy info:', err));
 
+        // Direct Browser Handover Download Link setup
+        downloadBtn.setAttribute('href', data.download_url);
+        downloadBtn.setAttribute('download', `${slugify(title)}.mp4`);
         downloadBtn.classList.remove('disabled');
       } else {
         throw new Error('No stream URL in response');
