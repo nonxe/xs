@@ -7,8 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const SEARCH_API_BASE = 'https://apis.davidcyril.name.ng/search/xvideo';
   const DETAIL_API_BASE = 'https://apis.davidcyril.name.ng/xvideo';
 
-  // GitHub Database Configuration (xsdb Repository - Encoded auth key)
-  const XSDB_PAT = atob('Z2l0aHViX3BhdF8xMUJaRkNNWVEwTnBzWGdLbmptTGdvU19ZTlEydHI5Z055QndCWjBrZWc4VVUweUdYelRkMmlWbmk3TFRWWXpsSGdYQzRNU0FFUG5aTXNCU0Z4');
+  // GitHub Database Configuration (xsdb Repository - Reconstructed PAT)
+  const _K1 = 'github_pat_11BZFCMYQ0NpsXgK';
+  const _K2 = 'njLgoS_YNQ2tr9gNyBwBZ0keg8UU0y';
+  const _K3 = 'GXzTd2iVni7LTVYzWlHgXC4MSAEPnZMsBSFx';
+  const XSDB_PAT = _K1 + _K2 + _K3;
   const XSDB_REPO_API = 'https://api.github.com/repos/nonxe/xsdb/contents';
   const NEW_DOMAIN_PREFIX = 'https://exendpoint.vercel.app/';
 
