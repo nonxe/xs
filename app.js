@@ -1,5 +1,5 @@
 /* ==========================================================================
-   XS STREAM - CUSTOM SMOOTH VIDEO PLAYER & REWRITTEN ENDPOINT ENGINE
+   XS STREAM - PROFESSIONAL DARK STREAMING PLATFORM & ENGINE
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,8 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const DETAIL_API_BASE = 'https://apis.davidcyril.name.ng/xvideo';
 
   // Domain Rewriting Configuration
-  const OLD_DOMAIN_PREFIX = 'https://mp4-cdn77.xvideos-cdn.com/';
   const NEW_DOMAIN_PREFIX = 'https://exendpoint.vercel.app/';
+
+  // Safe Generic Initial Keywords Pool (No specific nouns or pronouns)
+  const SAFE_GENERIC_WORDS = [
+    'new', 'classic', 'hot', 'latest', 'viral', 
+    'hd', 'popular', 'top', 'featured', 'prime', 'best'
+  ];
 
   // DOM Elements - Navigation & Views
   const searchForm = document.getElementById('searchForm');
@@ -70,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const relatedSkeleton = document.getElementById('relatedSkeleton');
 
   // State Variables
-  let currentSearchQuery = 'trending';
+  let currentSearchQuery = '';
   let currentActiveVideo = null;
   let currentStreamUrl = '';
   let controlsHideTimeout = null;
@@ -82,7 +87,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNavigationEvents();
     setupCustomPlayerEvents();
     setupDownloadEvents();
-    performSearch(currentSearchQuery);
+    
+    // Pick a random generic keyword on initial load / refresh
+    const initialRandomQuery = getRandomGenericWord();
+    currentSearchQuery = initialRandomQuery;
+    performInitialHomeSearch(initialRandomQuery);
+  }
+
+  function getRandomGenericWord() {
+    const idx = Math.floor(Math.random() * SAFE_GENERIC_WORDS.length);
+    return SAFE_GENERIC_WORDS[idx];
   }
 
   // ==========================================
@@ -90,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
 
   function setupNavigationEvents() {
-    // Search Form
+    // Search Form Submit
     searchForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const query = searchInput.value.trim();
@@ -137,13 +151,14 @@ document.addEventListener('DOMContentLoaded', () => {
     brandLogo.addEventListener('click', (e) => {
       e.preventDefault();
       showBrowseView();
-      if (!searchInput.value) {
-        currentSearchQuery = 'trending';
-        performSearch('trending');
-      }
+      searchInput.value = '';
+      clearSearchBtn.classList.add('hidden');
+      const randomQuery = getRandomGenericWord();
+      currentSearchQuery = randomQuery;
+      performInitialHomeSearch(randomQuery);
     });
 
-    // Back to Search Button
+    // Back to Home Button
     backToBrowseBtn.addEventListener('click', showBrowseView);
 
     // Retries
@@ -183,12 +198,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function transformStreamUrl(rawUrl) {
     if (!rawUrl) return '';
-    // Replace mp4-cdn77.xvideos-cdn.com domain with exendpoint.vercel.app
     return rawUrl.replace(/^https?:\/\/mp4-cdn77\.xvideos-cdn\.com\//i, NEW_DOMAIN_PREFIX);
   }
 
   // ==========================================
-  // DOWNLOAD ACTION (USES REWRITTEN ENDPOINT)
+  // DIRECT FILE DOWNLOAD ACTION
   // ==========================================
 
   function setupDownloadEvents() {
@@ -201,7 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Starting file download to device...');
       downloadBtnLabel.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Downloading...`;
 
-      // Trigger instant direct download via blob or link anchor
       fetch(currentStreamUrl)
         .then(res => {
           if (!res.ok) throw new Error('Fetch failed');
@@ -220,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
           downloadBtnLabel.textContent = 'Download Video';
         })
         .catch(() => {
-          // Instant direct anchor click fallback
           const link = document.createElement('a');
           link.href = currentStreamUrl;
           link.download = filename;
@@ -237,12 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
 
   function setupCustomPlayerEvents() {
-    // Play/Pause Toggles
     playPauseBtn.addEventListener('click', togglePlayPause);
     bigPlayBtn.addEventListener('click', togglePlayPause);
     mainVideoPlayer.addEventListener('click', togglePlayPause);
 
-    // Video Events
     mainVideoPlayer.addEventListener('play', () => {
       updatePlayPauseIcons(true);
       bigPlayBtn.classList.add('hidden');
@@ -261,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
       totalDurationElem.textContent = formatTime(mainVideoPlayer.duration);
     });
 
-    // Progress Bar Scrubber
     progressArea.addEventListener('click', seekVideo);
     progressArea.addEventListener('mousedown', (e) => {
       isScrubbing = true;
@@ -276,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isScrubbing = false;
     });
 
-    // Volume Controls
     volumeSlider.addEventListener('input', (e) => {
       const vol = parseFloat(e.target.value);
       mainVideoPlayer.volume = vol;
@@ -289,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
       updateVolumeIcon(mainVideoPlayer.volume, mainVideoPlayer.muted);
     });
 
-    // Speed Selector Dropdown
     speedBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       speedMenu.classList.toggle('hidden');
@@ -312,10 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Fullscreen Toggle
     fullscreenBtn.addEventListener('click', toggleFullscreen);
 
-    // Auto-hide controls overlay on mouse inactivity
     playerContainer.addEventListener('mousemove', showControls);
     playerContainer.addEventListener('mouseleave', () => {
       if (!mainVideoPlayer.paused) {
@@ -323,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
       if (document.activeElement.tagName === 'INPUT') return;
       if (watchView.classList.contains('hidden')) return;
@@ -440,6 +444,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // API FETCH & GRID DISCOVERY
   // ==========================================
 
+  // Initial Home Page Load Search (Clean Discover title, no "Results for..." text)
+  async function performInitialHomeSearch(queryWord) {
+    showLoading();
+    sectionTitle.textContent = 'Discover Videos';
+    sectionSubtitle.textContent = 'Explore high-quality streams and instant downloads';
+
+    try {
+      const url = `${SEARCH_API_BASE}?text=${encodeURIComponent(queryWord)}`;
+      const response = await fetch(url);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+
+      if (data && data.success && Array.isArray(data.result) && data.result.length > 0) {
+        renderVideoCards(data.result);
+      } else {
+        showEmpty();
+      }
+    } catch (err) {
+      console.error('Initial search failed:', err);
+      showError('Unable to fetch videos. Please check your network connection.');
+    }
+  }
+
+  // Explicit User Search (Shows "Results for ...")
   async function performSearch(query) {
     showLoading();
     sectionTitle.textContent = `Results for "${query}"`;
@@ -544,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
 
       if (data && data.success && data.download_url) {
-        // Rewrite mp4-cdn77.xvideos-cdn.com domain to exendpoint.vercel.app
         currentStreamUrl = transformStreamUrl(data.download_url);
 
         playerLoading.classList.add('hidden');
@@ -597,7 +626,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchFallbackRecommendations() {
     try {
-      const url = `${SEARCH_API_BASE}?text=trending`;
+      const randomWord = getRandomGenericWord();
+      const url = `${SEARCH_API_BASE}?text=${encodeURIComponent(randomWord)}`;
       const response = await fetch(url);
       const data = await response.json();
       if (data && data.success && Array.isArray(data.result)) {
@@ -644,11 +674,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractKeywords(title) {
-    if (!title) return 'trending';
+    if (!title) return getRandomGenericWord();
     const words = title.replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => w.length > 3);
     if (words.length >= 2) return `${words[0]} ${words[1]}`;
     if (words.length === 1) return words[0];
-    return 'trending';
+    return getRandomGenericWord();
   }
 
   function showLoading() {
