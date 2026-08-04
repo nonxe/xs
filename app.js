@@ -665,6 +665,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
+  // DOMAIN REWRITING HELPER
+  // ==========================================
+
+  function transformStreamUrl(rawUrl) {
+    if (!rawUrl) return '';
+    return rawUrl.replace(/^https?:\/\/[a-z0-9\-]+\.xvideos-cdn\.com\//i, NEW_DOMAIN_PREFIX);
+  }
+
+  // ==========================================
   // DIRECT FILE DOWNLOAD ACTION
   // ==========================================
 
@@ -1056,7 +1065,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const rawStream = data.download_url || data.stream_url || data.url || (data.result && (data.result.download_url || data.result.url));
 
       if (rawStream) {
-        const transformedUrl = transformStreamUrl(rawStream);
+        const cleanRawStream = decodeHtmlEntities(rawStream);
+        const transformedUrl = transformStreamUrl(cleanRawStream);
         currentStreamUrl = transformedUrl;
 
         playerLoading.classList.add('hidden');
@@ -1064,13 +1074,15 @@ document.addEventListener('DOMContentLoaded', () => {
         mainVideoPlayer.classList.remove('hidden');
         customControls.classList.remove('hidden');
 
-        // Play transformed URL first with automatic fallback to raw stream if playback fails
+        let fallbackAttempted = false;
         mainVideoPlayer.src = transformedUrl;
 
-        mainVideoPlayer.onerror = () => {
-          console.warn('Transformed stream load failed. Falling back to direct CDN stream...');
-          if (mainVideoPlayer.src !== rawStream) {
-            mainVideoPlayer.src = rawStream;
+        mainVideoPlayer.onerror = (e) => {
+          console.warn('Transformed stream load failed:', e);
+          if (!fallbackAttempted && cleanRawStream) {
+            fallbackAttempted = true;
+            console.log('Falling back to direct CDN stream:', cleanRawStream);
+            mainVideoPlayer.src = cleanRawStream;
             mainVideoPlayer.play().catch(err => console.log('Fallback playback error:', err));
           } else {
             playerLoading.classList.add('hidden');
