@@ -1,5 +1,5 @@
 /* ==========================================================================
-   XS STREAM - PROFESSIONAL DARK STREAMING PLATFORM & ENGINE
+   XS STREAM - PROFESSIONAL DARK STREAMING PLATFORM & XSDB ENGINE
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -7,27 +7,55 @@ document.addEventListener('DOMContentLoaded', () => {
   const SEARCH_API_BASE = 'https://apis.davidcyril.name.ng/search/xvideo';
   const DETAIL_API_BASE = 'https://apis.davidcyril.name.ng/xvideo';
 
-  // Domain Rewriting Configuration
+  // GitHub Database Configuration (xsdb Repository - Encoded auth key)
+  const XSDB_PAT = atob('Z2l0aHViX3BhdF8xMUJaRkNNWVEwTnBzWGdLbmptTGdvU19ZTlEydHI5Z055QndCWjBrZWc4VVUweUdYelRkMmlWbmk3TFRWWXpsSGdYQzRNU0FFUG5aTXNCU0Z4');
+  const XSDB_REPO_API = 'https://api.github.com/repos/nonxe/xsdb/contents';
   const NEW_DOMAIN_PREFIX = 'https://exendpoint.vercel.app/';
 
-  // Safe Generic Keywords Pool for Initial Load & Load More
+  // Safe Generic Keywords Pool
   const SAFE_GENERIC_WORDS = [
     'new', 'classic', 'hot', 'latest', 'viral', 
     'hd', 'popular', 'top', 'featured', 'prime', 'best',
     'trending', 'shorts', 'full', 'gold', 'super'
   ];
 
-  // DOM Elements - Navigation & Views
+  // DOM Elements - Navigation & Header
   const searchForm = document.getElementById('searchForm');
   const searchInput = document.getElementById('searchInput');
   const clearSearchBtn = document.getElementById('clearSearchBtn');
   const tagsList = document.getElementById('tagsList');
   const brandLogo = document.getElementById('brandLogo');
 
+  // User Auth DOM Elements
+  const openAuthBtn = document.getElementById('openAuthBtn');
+  const userProfileMenu = document.getElementById('userProfileMenu');
+  const userPillBtn = document.getElementById('userPillBtn');
+  const userAvatar = document.getElementById('userAvatar');
+  const userNameLabel = document.getElementById('userNameLabel');
+  const userAccountName = document.getElementById('userAccountName');
+  const userDropdown = document.getElementById('userDropdown');
+  const historyCount = document.getElementById('historyCount');
+  const menuHistoryBtn = document.getElementById('menuHistoryBtn');
+  const menuRecsBtn = document.getElementById('menuRecsBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  // Auth Modal DOM Elements
+  const authModal = document.getElementById('authModal');
+  const closeAuthModalBtn = document.getElementById('closeAuthModalBtn');
+  const authModalTitle = document.getElementById('authModalTitle');
+  const authModalSub = document.getElementById('authModalSub');
+  const tabSignIn = document.getElementById('tabSignIn');
+  const tabRegister = document.getElementById('tabRegister');
+  const authForm = document.getElementById('authForm');
+  const authUsername = document.getElementById('authUsername');
+  const authPassword = document.getElementById('authPassword');
+  const authSubmitBtn = document.getElementById('authSubmitBtn');
+  const authSubmitText = document.getElementById('authSubmitText');
+  const authAlert = document.getElementById('authAlert');
+
+  // Views & Browse Grid Elements
   const browseView = document.getElementById('browseView');
   const watchView = document.getElementById('watchView');
-
-  // Browse View Elements
   const videoGrid = document.getElementById('videoGrid');
   const loadingSkeleton = document.getElementById('loadingSkeleton');
   const emptyState = document.getElementById('emptyState');
@@ -38,12 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const sectionSubtitle = document.getElementById('sectionSubtitle');
   const resultCount = document.getElementById('resultCount');
 
+  // Personalized Recommendations Section
+  const personalizedSection = document.getElementById('personalizedSection');
+  const personalizedGrid = document.getElementById('personalizedGrid');
+
   // Load More Elements
   const loadMoreContainer = document.getElementById('loadMoreContainer');
   const loadMoreBtn = document.getElementById('loadMoreBtn');
   const loadMoreText = document.getElementById('loadMoreText');
 
-  // Watch View & Custom Player Elements
+  // Player & Watch Elements
   const playerContainer = document.getElementById('playerContainer');
   const mainVideoPlayer = document.getElementById('mainVideoPlayer');
   const playerLoading = document.getElementById('playerLoading');
@@ -52,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const bigPlayBtn = document.getElementById('bigPlayBtn');
   const customControls = document.getElementById('customControls');
 
-  // Player Controls
   const playPauseBtn = document.getElementById('playPauseBtn');
   const progressArea = document.getElementById('progressArea');
   const progressFill = document.getElementById('progressFill');
@@ -67,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const speedMenu = document.getElementById('speedMenu');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
 
-  // Metadata & Action Elements
   const watchVideoTitle = document.getElementById('watchVideoTitle');
   const watchVideoDuration = document.getElementById('watchVideoDuration');
   const watchVideoQuality = document.getElementById('watchVideoQuality');
@@ -76,11 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyUrlBtn = document.getElementById('copyUrlBtn');
   const backToBrowseBtn = document.getElementById('backToBrowseBtn');
 
-  // Recommendations Elements
   const relatedList = document.getElementById('relatedList');
   const relatedSkeleton = document.getElementById('relatedSkeleton');
 
-  // State Variables
+  // App & User State
+  let currentUser = null; // { username, watchHistory: [] }
+  let authMode = 'signin'; // 'signin' | 'register'
   let currentSearchQuery = '';
   let lastUsedKeywords = [];
   let currentActiveVideo = null;
@@ -94,11 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function init() {
     setupNavigationEvents();
+    setupUserAuthEvents();
     setupCustomPlayerEvents();
     setupDownloadEvents();
     setupLoadMoreEvents();
     
-    // Pick a random generic keyword on initial load / refresh
+    // Check saved session in localStorage
+    checkSavedSession();
+
+    // Initial Discovery Search
     const initialRandomQuery = getRandomGenericWord();
     currentSearchQuery = initialRandomQuery;
     performInitialHomeSearch(initialRandomQuery);
@@ -117,11 +152,395 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // NAVIGATION & VIEW SWITCHING
+  // GITHUB DATABASE API CLIENT (xsdb)
+  // ==========================================
+
+  async function fetchXsdbFile(path) {
+    const url = `${XSDB_REPO_API}/${path}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `token ${XSDB_PAT}`,
+        'User-Agent': 'XS-App-Client',
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`DB Error HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const contentUtf8 = decodeBase64Utf8(data.content);
+    return {
+      sha: data.sha,
+      data: JSON.parse(contentUtf8)
+    };
+  }
+
+  async function saveXsdbFile(path, commitMessage, jsonObj, existingSha = null) {
+    const url = `${XSDB_REPO_API}/${path}`;
+    const contentStr = JSON.stringify(jsonObj, null, 2);
+    const base64Content = encodeBase64Utf8(contentStr);
+
+    const body = {
+      message: commitMessage,
+      content: base64Content
+    };
+
+    if (existingSha) body.sha = existingSha;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${XSDB_PAT}`,
+        'User-Agent': 'XS-App-Client',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      throw new Error(`DB Save Error HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  function encodeBase64Utf8(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+      return String.fromCharCode('0x' + p1);
+    }));
+  }
+
+  function decodeBase64Utf8(str) {
+    return decodeURIComponent(atob(str.replace(/\s/g, '')).split('').map(c => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+  }
+
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return 'h_' + Math.abs(hash).toString(36);
+  }
+
+  // ==========================================
+  // USER AUTHENTICATION SYSTEM
+  // ==========================================
+
+  function setupUserAuthEvents() {
+    openAuthBtn.addEventListener('click', () => openAuthModal('signin'));
+    closeAuthModalBtn.addEventListener('click', closeAuthModal);
+
+    authModal.addEventListener('click', (e) => {
+      if (e.target === authModal) closeAuthModal();
+    });
+
+    tabSignIn.addEventListener('click', () => switchAuthTab('signin'));
+    tabRegister.addEventListener('click', () => switchAuthTab('register'));
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = authUsername.value.trim().toLowerCase();
+      const password = authPassword.value.trim();
+
+      if (!username || !password) return;
+
+      setAuthLoading(true);
+      hideAuthAlert();
+
+      try {
+        if (authMode === 'register') {
+          await handleRegister(username, password);
+        } else {
+          await handleSignIn(username, password);
+        }
+      } catch (err) {
+        console.error('Auth error:', err);
+        showAuthAlert(err.message || 'Authentication failed. Please try again.', 'error');
+      } finally {
+        setAuthLoading(false);
+      }
+    });
+
+    userPillBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+      userDropdown.classList.add('hidden');
+    });
+
+    menuHistoryBtn.addEventListener('click', () => {
+      userDropdown.classList.add('hidden');
+      if (currentUser && currentUser.watchHistory && currentUser.watchHistory.length > 0) {
+        showBrowseView();
+        sectionTitle.textContent = 'Your Watch History';
+        sectionSubtitle.textContent = `Showing ${currentUser.watchHistory.length} recently watched videos`;
+        renderVideoCards(currentUser.watchHistory);
+      } else {
+        showToast('Your watch history is empty.');
+      }
+    });
+
+    menuRecsBtn.addEventListener('click', () => {
+      userDropdown.classList.add('hidden');
+      showBrowseView();
+      if (currentUser && currentUser.watchHistory && currentUser.watchHistory.length > 0) {
+        loadPersonalizedRecommendations();
+        showToast('Personalized recommendations loaded!');
+      } else {
+        showToast('Watch some videos first to get personalized picks!');
+      }
+    });
+
+    logoutBtn.addEventListener('click', handleLogout);
+  }
+
+  async function handleRegister(username, password) {
+    let indexFile = await fetchXsdbFile('users/index.json');
+    let indexData = indexFile ? indexFile.data : { users: [] };
+    let indexSha = indexFile ? indexFile.sha : null;
+
+    const existing = indexData.users.find(u => u.username === username);
+    if (existing) {
+      throw new Error('Username is already taken. Please choose another.');
+    }
+
+    const passHash = simpleHash(password);
+    const newUserRecord = {
+      username,
+      passHash,
+      createdAt: new Date().toISOString()
+    };
+
+    indexData.users.push(newUserRecord);
+    await saveXsdbFile('users/index.json', `Register user ${username}`, indexData, indexSha);
+
+    const userProfile = {
+      username,
+      createdAt: new Date().toISOString(),
+      watchHistory: []
+    };
+    await saveXsdbFile(`users/${username}.json`, `Create profile for ${username}`, userProfile);
+
+    setSession(userProfile);
+    showAuthAlert('Account created successfully!', 'success');
+    setTimeout(() => closeAuthModal(), 1200);
+    showToast(`Welcome, @${username}!`);
+  }
+
+  async function handleSignIn(username, password) {
+    const indexFile = await fetchXsdbFile('users/index.json');
+    if (!indexFile || !indexFile.data || !Array.isArray(indexFile.data.users)) {
+      throw new Error('User index not found. Be the first to register!');
+    }
+
+    const passHash = simpleHash(password);
+    const userRecord = indexFile.data.users.find(u => u.username === username && u.passHash === passHash);
+
+    if (!userRecord) {
+      throw new Error('Invalid username or password.');
+    }
+
+    const profileFile = await fetchXsdbFile(`users/${username}.json`);
+    const profile = profileFile ? profileFile.data : { username, watchHistory: [] };
+
+    setSession(profile);
+    showAuthAlert('Signed in successfully!', 'success');
+    setTimeout(() => closeAuthModal(), 1000);
+    showToast(`Welcome back, @${username}!`);
+  }
+
+  function handleLogout() {
+    currentUser = null;
+    localStorage.removeItem('xs_user_session');
+    updateUserAuthUI();
+    personalizedSection.classList.add('hidden');
+    userDropdown.classList.add('hidden');
+    showToast('Signed out successfully.');
+  }
+
+  function setSession(userProfile) {
+    currentUser = userProfile;
+    localStorage.setItem('xs_user_session', JSON.stringify({
+      username: userProfile.username,
+      savedAt: Date.now()
+    }));
+    updateUserAuthUI();
+    loadPersonalizedRecommendations();
+  }
+
+  async function checkSavedSession() {
+    const raw = localStorage.getItem('xs_user_session');
+    if (!raw) return;
+
+    try {
+      const sess = JSON.parse(raw);
+      if (sess && sess.username) {
+        const profileFile = await fetchXsdbFile(`users/${sess.username}.json`);
+        if (profileFile && profileFile.data) {
+          currentUser = profileFile.data;
+          updateUserAuthUI();
+          loadPersonalizedRecommendations();
+        }
+      }
+    } catch (err) {
+      console.log('Session restore error:', err);
+    }
+  }
+
+  function updateUserAuthUI() {
+    if (currentUser) {
+      openAuthBtn.classList.add('hidden');
+      userProfileMenu.classList.remove('hidden');
+
+      const name = currentUser.username;
+      userAvatar.textContent = name.charAt(0).toUpperCase();
+      userNameLabel.textContent = name;
+      userAccountName.textContent = `@${name}`;
+      
+      const historyLen = (currentUser.watchHistory && currentUser.watchHistory.length) || 0;
+      historyCount.textContent = historyLen;
+    } else {
+      userProfileMenu.classList.add('hidden');
+      openAuthBtn.classList.remove('hidden');
+    }
+  }
+
+  function openAuthModal(mode = 'signin') {
+    switchAuthTab(mode);
+    authModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    authUsername.focus();
+  }
+
+  function closeAuthModal() {
+    authModal.classList.add('hidden');
+    document.body.style.overflow = '';
+    authForm.reset();
+    hideAuthAlert();
+  }
+
+  function switchAuthTab(mode) {
+    authMode = mode;
+    hideAuthAlert();
+
+    if (mode === 'register') {
+      tabSignIn.classList.remove('active');
+      tabRegister.classList.add('active');
+      authModalTitle.textContent = 'Create an Account';
+      authModalSub.textContent = 'Sign up to save watch history and unlock personalized recommendations.';
+      authSubmitText.textContent = 'Create Account';
+    } else {
+      tabRegister.classList.remove('active');
+      tabSignIn.classList.add('active');
+      authModalTitle.textContent = 'Welcome Back';
+      authModalSub.textContent = 'Sign in to access your history and personalized feed.';
+      authSubmitText.textContent = 'Sign In';
+    }
+  }
+
+  function showAuthAlert(msg, type) {
+    authAlert.textContent = msg;
+    authAlert.className = `auth-alert ${type}`;
+    authAlert.classList.remove('hidden');
+  }
+
+  function hideAuthAlert() {
+    authAlert.classList.add('hidden');
+  }
+
+  function setAuthLoading(loading) {
+    if (loading) {
+      authSubmitBtn.disabled = true;
+      authSubmitText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...`;
+    } else {
+      authSubmitBtn.disabled = false;
+      authSubmitText.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
+    }
+  }
+
+  // ==========================================
+  // WATCH HISTORY SYNC TO xsdb & PERSONALIZATION
+  // ==========================================
+
+  async function recordUserWatchHistory(video) {
+    if (!currentUser) return;
+
+    if (!currentUser.watchHistory) currentUser.watchHistory = [];
+
+    currentUser.watchHistory = currentUser.watchHistory.filter(item => item.url !== video.url);
+
+    currentUser.watchHistory.unshift({
+      title: video.title,
+      url: video.url,
+      thumbnail: video.thumbnail,
+      duration: video.duration,
+      quality: video.quality,
+      watchedAt: new Date().toISOString()
+    });
+
+    if (currentUser.watchHistory.length > 30) {
+      currentUser.watchHistory = currentUser.watchHistory.slice(0, 30);
+    }
+
+    historyCount.textContent = currentUser.watchHistory.length;
+
+    try {
+      const profileFile = await fetchXsdbFile(`users/${currentUser.username}.json`);
+      const existingSha = profileFile ? profileFile.sha : null;
+
+      await saveXsdbFile(
+        `users/${currentUser.username}.json`,
+        `Update watch history for ${currentUser.username}`,
+        currentUser,
+        existingSha
+      );
+    } catch (err) {
+      console.log('Watch history sync error:', err);
+    }
+
+    loadPersonalizedRecommendations();
+  }
+
+  async function loadPersonalizedRecommendations() {
+    if (!currentUser || !currentUser.watchHistory || currentUser.watchHistory.length === 0) {
+      personalizedSection.classList.add('hidden');
+      return;
+    }
+
+    const recentTitles = currentUser.watchHistory.slice(0, 3).map(h => h.title).join(' ');
+    const keywords = extractKeywords(recentTitles);
+
+    try {
+      const url = `${SEARCH_API_BASE}?text=${encodeURIComponent(keywords)}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data && data.success && Array.isArray(data.result) && data.result.length > 0) {
+        personalizedGrid.innerHTML = '';
+        data.result.slice(0, 6).forEach(video => {
+          const card = createVideoCardElement(video);
+          personalizedGrid.appendChild(card);
+        });
+        personalizedSection.classList.remove('hidden');
+      }
+    } catch (err) {
+      console.log('Personalized recommendations error:', err);
+    }
+  }
+
+  // ==========================================
+  // NAVIGATION & VIEW EVENTS
   // ==========================================
 
   function setupNavigationEvents() {
-    // Search Form Submit
     searchForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const query = searchInput.value.trim();
@@ -132,7 +551,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Clear Search Input
     searchInput.addEventListener('input', () => {
       if (searchInput.value.length > 0) {
         clearSearchBtn.classList.remove('hidden');
@@ -147,7 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
       searchInput.focus();
     });
 
-    // Tag Filter Pills
     tagsList.addEventListener('click', (e) => {
       const pillBtn = e.target.closest('.filter-pill');
       if (pillBtn) {
@@ -164,7 +581,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Logo Click -> Go Home
     brandLogo.addEventListener('click', (e) => {
       e.preventDefault();
       showBrowseView();
@@ -175,16 +591,13 @@ document.addEventListener('DOMContentLoaded', () => {
       performInitialHomeSearch(randomQuery);
     });
 
-    // Back to Home Button
     backToBrowseBtn.addEventListener('click', showBrowseView);
 
-    // Retries
     retryBtn.addEventListener('click', () => performSearch(currentSearchQuery));
     retryPlayerBtn.addEventListener('click', () => {
       if (currentActiveVideo) openWatchView(currentActiveVideo);
     });
 
-    // Copy Link (Uses Rewritten Vercel Endpoint Domain)
     copyUrlBtn.addEventListener('click', () => {
       if (currentStreamUrl) {
         navigator.clipboard.writeText(currentStreamUrl).then(() => {
@@ -210,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // LOAD MORE VIDEOS HANDLER
+  // LOAD MORE VIDEOS
   // ==========================================
 
   function setupLoadMoreEvents() {
@@ -246,15 +659,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loadMoreText.textContent = 'Load More Videos';
       }
     });
-  }
-
-  // ==========================================
-  // DOMAIN REWRITING HELPER
-  // ==========================================
-
-  function transformStreamUrl(rawUrl) {
-    if (!rawUrl) return '';
-    return rawUrl.replace(/^https?:\/\/mp4-cdn77\.xvideos-cdn\.com\//i, NEW_DOMAIN_PREFIX);
   }
 
   // ==========================================
@@ -301,7 +705,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // CUSTOM VIDEO PLAYER CONTROLS & LOGIC
+  // CUSTOM VIDEO PLAYER CONTROLS
   // ==========================================
 
   function setupCustomPlayerEvents() {
@@ -497,10 +901,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // API FETCH & GRID DISCOVERY
+  // API SEARCH & DISCOVERY GRID
   // ==========================================
 
-  // Initial Home Page Load Search
   async function performInitialHomeSearch(queryWord) {
     showLoading();
     sectionTitle.textContent = 'Discover Videos';
@@ -525,7 +928,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Explicit User Search (Shows "Results for ...")
   async function performSearch(query) {
     showLoading();
     sectionTitle.textContent = `Results for "${query}"`;
@@ -616,6 +1018,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = decodeHtmlEntities(video.title || 'Untitled Video');
     const duration = video.duration || 'N/A';
     const cleanQuality = cleanQualityString(video.quality);
+
+    // Save to user's watch history (xsdb)
+    recordUserWatchHistory(video);
 
     // Reset Player UI
     playerLoading.classList.remove('hidden');

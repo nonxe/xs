@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>XS Stream - Premium Dark Video Experience</title>
-  <meta name="description" content="Explore, stream, and download high-quality videos with custom playback and smart recommendations." />
+  <meta name="description" content="Explore, stream, and download high-quality videos with custom playback, user accounts, and personalized recommendations." />
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,6 +56,44 @@
               <span>Search</span>
             </button>
           </form>
+        </div>
+
+        <!-- User Auth Bar -->
+        <div class="auth-wrapper" id="authWrapper">
+          <button id="openAuthBtn" class="pill-btn primary auth-btn">
+            <i class="fa-regular fa-user"></i>
+            <span>Sign In</span>
+          </button>
+
+          <div id="userProfileMenu" class="user-menu-container hidden">
+            <button id="userPillBtn" class="user-pill">
+              <div class="avatar-circle" id="userAvatar">U</div>
+              <span id="userNameLabel" class="user-name">User</span>
+              <i class="fa-solid fa-chevron-down caret-icon"></i>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div id="userDropdown" class="user-dropdown hidden">
+              <div class="dropdown-header">
+                <span class="account-title">Account</span>
+                <span id="userAccountName" class="account-name">@username</span>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button id="menuHistoryBtn" class="dropdown-item">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Watch History (<span id="historyCount">0</span>)</span>
+              </button>
+              <button id="menuRecsBtn" class="dropdown-item">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>For You</span>
+              </button>
+              <div class="dropdown-divider"></div>
+              <button id="logoutBtn" class="dropdown-item logout">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -261,6 +299,18 @@
            ========================================== -->
       <section id="browseView" class="browse-view">
         
+        <!-- Personalized Recommendations Section (For Logged In Users with History) -->
+        <div id="personalizedSection" class="personalized-section hidden">
+          <div class="section-bar">
+            <div class="section-heading">
+              <h2 class="title-text spark-title"><i class="fa-solid fa-wand-magic-sparkles spark-icon"></i> Recommended For You</h2>
+              <p class="subtitle-text">Tailored videos based on your watch history</p>
+            </div>
+            <span class="personal-badge">Personalized</span>
+          </div>
+          <div id="personalizedGrid" class="cards-grid"></div>
+        </div>
+
         <!-- Section Bar -->
         <div class="section-bar">
           <div class="section-heading">
@@ -353,6 +403,55 @@
       <p>© 2026 XS Stream • Professional Dark Streaming Platform</p>
     </footer>
 
+  </div>
+
+  <!-- AUTH MODAL (Sign In & Create Account) -->
+  <div id="authModal" class="modal-backdrop hidden">
+    <div class="auth-card">
+      <button id="closeAuthModalBtn" class="modal-close" title="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="auth-header">
+        <div class="auth-logo-badge"><i class="fa-solid fa-user-shield"></i></div>
+        <h2 id="authModalTitle">Welcome to XS Stream</h2>
+        <p id="authModalSub">Sign in or create an account to save history & personalized picks.</p>
+      </div>
+
+      <!-- Auth Tabs Switcher -->
+      <div class="auth-tabs">
+        <button id="tabSignIn" class="auth-tab active">Sign In</button>
+        <button id="tabRegister" class="auth-tab">Create Account</button>
+      </div>
+
+      <!-- Alert Banner -->
+      <div id="authAlert" class="auth-alert hidden"></div>
+
+      <!-- Auth Form -->
+      <form id="authForm" class="auth-form">
+        <div class="form-group">
+          <label for="authUsername">Username</label>
+          <div class="input-field-box">
+            <i class="fa-solid fa-at field-icon"></i>
+            <input type="text" id="authUsername" placeholder="e.g. alex2026" required autocomplete="username" minlength="3" maxlength="20" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="authPassword">Password</label>
+          <div class="input-field-box">
+            <i class="fa-solid fa-lock field-icon"></i>
+            <input type="password" id="authPassword" placeholder="••••••••" required autocomplete="current-password" minlength="4" />
+          </div>
+        </div>
+
+        <button type="submit" id="authSubmitBtn" class="auth-submit-btn">
+          <span id="authSubmitText">Sign In</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+    </div>
   </div>
 
   <!-- Floating Toast Notifications -->
