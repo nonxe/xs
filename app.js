@@ -1053,20 +1053,37 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
+      const rawStream = data.download_url || data.stream_url || data.url || (data.result && (data.result.download_url || data.result.url));
 
-      if (data && data.success && data.download_url) {
-        currentStreamUrl = transformStreamUrl(data.download_url);
+      if (rawStream) {
+        const transformedUrl = transformStreamUrl(rawStream);
+        currentStreamUrl = transformedUrl;
 
         playerLoading.classList.add('hidden');
+        playerError.classList.add('hidden');
         mainVideoPlayer.classList.remove('hidden');
         customControls.classList.remove('hidden');
 
-        mainVideoPlayer.src = currentStreamUrl;
-        mainVideoPlayer.play().catch(err => console.log('Autoplay policy info:', err));
+        // Play transformed URL first with automatic fallback to raw stream if playback fails
+        mainVideoPlayer.src = transformedUrl;
 
+        mainVideoPlayer.onerror = () => {
+          console.warn('Transformed stream load failed. Falling back to direct CDN stream...');
+          if (mainVideoPlayer.src !== rawStream) {
+            mainVideoPlayer.src = rawStream;
+            mainVideoPlayer.play().catch(err => console.log('Fallback playback error:', err));
+          } else {
+            playerLoading.classList.add('hidden');
+            mainVideoPlayer.classList.add('hidden');
+            customControls.classList.add('hidden');
+            playerError.classList.remove('hidden');
+          }
+        };
+
+        mainVideoPlayer.play().catch(err => console.log('Autoplay policy info:', err));
         downloadBtn.classList.remove('disabled');
       } else {
-        throw new Error('No stream URL in response');
+        throw new Error('No valid stream URL in response');
       }
     } catch (err) {
       console.error('Stream fetch failed:', err);
