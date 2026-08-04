@@ -319,9 +319,7 @@ html, body {
   gap: 18px;
 }
 
-/* ==========================================
-   CUSTOM SMOOTH VIDEO PLAYER
-   ========================================== */
+/* Custom Video Player */
 .player-wrapper {
   position: relative;
   width: 100%;
@@ -1018,6 +1016,37 @@ html, body {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Load More Wrapper */
+.load-more-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 36px 0 12px;
+}
+
+.load-more-btn {
+  padding: 12px 32px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-bright);
+  color: var(--color-text-main);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  transition: var(--transition-smooth);
+}
+
+.load-more-btn:hover {
+  background: var(--color-bg-pill-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(255, 43, 94, 0.25);
+}
+
+.load-more-btn:active {
+  transform: scale(0.95);
 }
 
 /* Skeleton */

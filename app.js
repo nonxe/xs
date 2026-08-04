@@ -10,10 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Domain Rewriting Configuration
   const NEW_DOMAIN_PREFIX = 'https://exendpoint.vercel.app/';
 
-  // Safe Generic Initial Keywords Pool (No specific nouns or pronouns)
+  // Safe Generic Keywords Pool for Initial Load & Load More
   const SAFE_GENERIC_WORDS = [
     'new', 'classic', 'hot', 'latest', 'viral', 
-    'hd', 'popular', 'top', 'featured', 'prime', 'best'
+    'hd', 'popular', 'top', 'featured', 'prime', 'best',
+    'trending', 'shorts', 'full', 'gold', 'super'
   ];
 
   // DOM Elements - Navigation & Views
@@ -36,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const sectionTitle = document.getElementById('sectionTitle');
   const sectionSubtitle = document.getElementById('sectionSubtitle');
   const resultCount = document.getElementById('resultCount');
+
+  // Load More Elements
+  const loadMoreContainer = document.getElementById('loadMoreContainer');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const loadMoreText = document.getElementById('loadMoreText');
 
   // Watch View & Custom Player Elements
   const playerContainer = document.getElementById('playerContainer');
@@ -76,10 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // State Variables
   let currentSearchQuery = '';
+  let lastUsedKeywords = [];
   let currentActiveVideo = null;
   let currentStreamUrl = '';
+  let totalLoadedVideosCount = 0;
   let controlsHideTimeout = null;
   let isScrubbing = false;
+  let isLoadingMore = false;
 
   init();
 
@@ -87,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNavigationEvents();
     setupCustomPlayerEvents();
     setupDownloadEvents();
+    setupLoadMoreEvents();
     
     // Pick a random generic keyword on initial load / refresh
     const initialRandomQuery = getRandomGenericWord();
@@ -95,8 +105,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getRandomGenericWord() {
-    const idx = Math.floor(Math.random() * SAFE_GENERIC_WORDS.length);
-    return SAFE_GENERIC_WORDS[idx];
+    const availableWords = SAFE_GENERIC_WORDS.filter(w => !lastUsedKeywords.includes(w));
+    const pool = availableWords.length > 0 ? availableWords : SAFE_GENERIC_WORDS;
+    const idx = Math.floor(Math.random() * pool.length);
+    const chosen = pool[idx];
+    
+    lastUsedKeywords.push(chosen);
+    if (lastUsedKeywords.length > 6) lastUsedKeywords.shift();
+    
+    return chosen;
   }
 
   // ==========================================
@@ -190,6 +207,45 @@ document.addEventListener('DOMContentLoaded', () => {
     browseView.classList.add('hidden');
     watchView.classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ==========================================
+  // LOAD MORE VIDEOS HANDLER
+  // ==========================================
+
+  function setupLoadMoreEvents() {
+    loadMoreBtn.addEventListener('click', async () => {
+      if (isLoadingMore) return;
+
+      isLoadingMore = true;
+      loadMoreBtn.classList.add('disabled');
+      loadMoreText.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading...`;
+
+      const nextKeyword = getRandomGenericWord();
+
+      try {
+        const url = `${SEARCH_API_BASE}?text=${encodeURIComponent(nextKeyword)}`;
+        const response = await fetch(url);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+
+        if (data && data.success && Array.isArray(data.result) && data.result.length > 0) {
+          appendVideoCards(data.result);
+          showToast('Loaded more videos!');
+        } else {
+          showToast('No more videos found.');
+        }
+      } catch (err) {
+        console.error('Load more failed:', err);
+        showToast('Failed to load more videos.');
+      } finally {
+        isLoadingMore = false;
+        loadMoreBtn.classList.remove('disabled');
+        loadMoreText.textContent = 'Load More Videos';
+      }
+    });
   }
 
   // ==========================================
@@ -444,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // API FETCH & GRID DISCOVERY
   // ==========================================
 
-  // Initial Home Page Load Search (Clean Discover title, no "Results for..." text)
+  // Initial Home Page Load Search
   async function performInitialHomeSearch(queryWord) {
     showLoading();
     sectionTitle.textContent = 'Discover Videos';
@@ -497,39 +553,56 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderVideoCards(videos) {
     hideAllBrowseStates();
     videoGrid.innerHTML = '';
-    resultCount.textContent = `${videos.length} Videos`;
+    totalLoadedVideosCount = videos.length;
+    resultCount.textContent = `${totalLoadedVideosCount} Videos`;
 
     videos.forEach((video) => {
-      const card = document.createElement('div');
-      card.className = 'video-card-item';
-
-      const title = decodeHtmlEntities(video.title || 'Untitled Video');
-      const cleanQuality = cleanQualityString(video.quality);
-      const duration = video.duration || 'N/A';
-
-      card.innerHTML = `
-        <div class="card-media">
-          <img src="${video.thumbnail}" alt="${escapeHtml(title)}" class="card-img" loading="lazy" onerror="this.src='https://via.placeholder.com/640x360/121216/9ca3af?text=No+Preview';" />
-          <div class="card-play-glass">
-            <div class="glass-play-btn"><i class="fa-solid fa-play"></i></div>
-          </div>
-          ${duration ? `<span class="pill-tag pill-duration"><i class="fa-regular fa-clock"></i> ${duration}</span>` : ''}
-          ${cleanQuality ? `<span class="pill-tag pill-quality">${cleanQuality}</span>` : ''}
-        </div>
-        <div class="card-meta">
-          <h3 class="card-heading" title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
-          <div class="card-footer-info">
-            <span>XS Stream</span>
-            <span class="watch-text">Watch <i class="fa-solid fa-chevron-right"></i></span>
-          </div>
-        </div>
-      `;
-
-      card.addEventListener('click', () => openWatchView(video));
+      const card = createVideoCardElement(video);
       videoGrid.appendChild(card);
     });
 
     videoGrid.classList.remove('hidden');
+    loadMoreContainer.classList.remove('hidden');
+  }
+
+  function appendVideoCards(newVideos) {
+    newVideos.forEach((video) => {
+      const card = createVideoCardElement(video);
+      videoGrid.appendChild(card);
+    });
+
+    totalLoadedVideosCount += newVideos.length;
+    resultCount.textContent = `${totalLoadedVideosCount} Videos`;
+  }
+
+  function createVideoCardElement(video) {
+    const card = document.createElement('div');
+    card.className = 'video-card-item';
+
+    const title = decodeHtmlEntities(video.title || 'Untitled Video');
+    const cleanQuality = cleanQualityString(video.quality);
+    const duration = video.duration || 'N/A';
+
+    card.innerHTML = `
+      <div class="card-media">
+        <img src="${video.thumbnail}" alt="${escapeHtml(title)}" class="card-img" loading="lazy" onerror="this.src='https://via.placeholder.com/640x360/121216/9ca3af?text=No+Preview';" />
+        <div class="card-play-glass">
+          <div class="glass-play-btn"><i class="fa-solid fa-play"></i></div>
+        </div>
+        ${duration ? `<span class="pill-tag pill-duration"><i class="fa-regular fa-clock"></i> ${duration}</span>` : ''}
+        ${cleanQuality ? `<span class="pill-tag pill-quality">${cleanQuality}</span>` : ''}
+      </div>
+      <div class="card-meta">
+        <h3 class="card-heading" title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
+        <div class="card-footer-info">
+          <span>XS Stream</span>
+          <span class="watch-text">Watch <i class="fa-solid fa-chevron-right"></i></span>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener('click', () => openWatchView(video));
+    return card;
   }
 
   // ==========================================
@@ -702,6 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function hideAllBrowseStates() {
     videoGrid.classList.add('hidden');
+    loadMoreContainer.classList.add('hidden');
     loadingSkeleton.classList.add('hidden');
     emptyState.classList.add('hidden');
     errorState.classList.add('hidden');
